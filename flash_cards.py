@@ -97,7 +97,7 @@ def filter_cards(filter_name):
         return redirect(url_for('cards'))
 
     db = get_db()
-    fullquery = "SELECT id, type, front, back, known FROM cards " + query + " ORDER BY id DESC"
+    fullquery = f"SELECT id, type, front, back, known FROM cards {query} ORDER BY id DESC"
     cur = db.execute(fullquery)
     cards = cur.fetchall()
     return render_template('cards.html', cards=cards, filter_name=filter_name)
@@ -175,17 +175,21 @@ def delete(card_id):
 @app.route('/general')
 @app.route('/general/<card_id>')
 def general(card_id=None):
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    return memorize("general", card_id)
+    return (
+        memorize("general", card_id)
+        if session.get('logged_in')
+        else redirect(url_for('login'))
+    )
 
 
 @app.route('/code')
 @app.route('/code/<card_id>')
 def code(card_id=None):
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    return memorize("code", card_id)
+    return (
+        memorize("code", card_id)
+        if session.get('logged_in')
+        else redirect(url_for('login'))
+    )
 
 
 def memorize(card_type, card_id):
@@ -196,12 +200,9 @@ def memorize(card_type, card_id):
     else:
         return redirect(url_for('cards'))
 
-    if card_id:
-        card = get_card_by_id(card_id)
-    else:
-        card = get_card(type)
+    card = get_card_by_id(card_id) if card_id else get_card(type)
     if not card:
-        flash("You've learned all the " + card_type + " cards.")
+        flash(f"You've learned all the {card_type} cards.")
         return redirect(url_for('cards'))
     short_answer = (len(card['back']) < 75)
     return render_template('memorize.html',
